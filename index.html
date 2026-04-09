@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArgoMentor — Il testo argomentativo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#F5F0E8;
+  --paper:#FFFFF8;
+  --ink:#1A1A2E;
+  --accent:#2D6A4F;
+  --accent-light:#40916C;
+  --accent-pale:#D8F3DC;
+  --scaffold:#5C4033;
+  --scaffold-bg:#FDF6EC;
+  --line:#C5D0E6;
+  --sidebar-bg:#FAF7F2;
+  --topbar:#2D6A4F;
+  --topbar-text:#fff;
+  --warn:#C44536;
+  --dim:#8D99AE;
+  --radius:10px;
+}
+html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink)}
+
+/* ── TOPBAR ── */
+.topbar{
+  height:64px;display:flex;align-items:center;justify-content:space-between;
+  background:var(--topbar);color:var(--topbar-text);padding:0 24px;
+  box-shadow:0 2px 12px rgba(0,0,0,.15);position:relative;z-index:10;
+}
+.topbar h1{font-size:18px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
+.topbar h1 svg{width:26px;height:26px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.word-counter{font-size:13px;opacity:.85;font-weight:500}
+.btn-reset{
+  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  color:#fff;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;
+  font-family:inherit;font-weight:600;transition:.2s;
+}
+.btn-reset:hover{background:rgba(255,255,255,.25)}
+
+/* ── TOPIC SELECTION ── */
+.topic-bar{
+  background:linear-gradient(135deg,#FDF6EC,#F5F0E8);
+  border-bottom:1px solid #E0D5C1;min-height:auto;padding:14px 24px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.topic-instruction{font-size:13px;color:var(--dim);font-weight:500}
+.topic-cards{display:flex;gap:12px;flex-wrap:wrap}
+.topic-card{
+  flex:1;min-width:200px;background:#fff;border:2px solid #E0D5C1;
+  border-radius:var(--radius);padding:14px 16px;cursor:pointer;
+  transition:.25s;position:relative;font-size:15px;line-height:1.55;
+}
+.topic-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 16px rgba(45,106,79,.12)}
+.topic-card.selected{
+  border-color:var(--accent);background:var(--accent-pale);
+  animation:topicPulse .4s ease;
+}
+.topic-card.dismissed{
+  opacity:0;transform:scale(.9);pointer-events:none;
+  transition:.35s;position:absolute;
+}
+.topic-bar.locked .topic-cards{justify-content:center}
+.topic-bar.locked .topic-card.selected{
+  flex:0;min-width:auto;max-width:900px;cursor:default;
+  border-color:var(--accent);background:var(--accent-pale);
+}
+@keyframes topicPulse{0%{transform:scale(1)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+.topic-label{
+  display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;color:var(--accent);margin-bottom:6px;
+}
+.btn-new-topics{
+  align-self:flex-end;background:none;border:1px dashed var(--dim);
+  color:var(--dim);padding:6px 14px;border-radius:6px;font-size:12px;
+  cursor:pointer;font-family:inherit;font-weight:600;transition:.2s;
+}
+.btn-new-topics:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── MAIN LAYOUT ── */
+.main{display:flex;height:calc(100vh - 64px);overflow:hidden}
+
+/* ── LEFT: SCAFFOLDING ── */
+.scaffold-panel{
+  width:310px;min-width:310px;background:var(--scaffold-bg);
+  border-right:1px solid #E0D5C1;overflow-y:auto;padding:16px 14px;
+  display:flex;flex-direction:column;gap:14px;
+}
+.scaffold-panel::-webkit-scrollbar{width:4px}
+.scaffold-panel::-webkit-scrollbar-thumb{background:#D0C4B0;border-radius:4px}
+.scaffold-title{
+  font-size:13px;font-weight:700;color:var(--scaffold);
+  text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:6px;
+}
+.scaffold-title svg{width:16px;height:16px}
+.scaffold-group{display:flex;flex-direction:column;gap:4px}
+.scaffold-group-label{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px}
+.scaffold-chip{
+  font-size:14px;padding:8px 12px;background:#fff;
+  border:1px solid #E0D5C1;border-radius:6px;cursor:pointer;
+  transition:.2s;color:var(--scaffold);line-height:1.3;
+}
+.scaffold-chip:hover{background:var(--accent-pale);border-color:var(--accent-light);transform:translateX(3px)}
+.scaffold-chip:active{transform:scale(.97)}
+
+/* ── CENTER: PAPER ── */
+.paper-area{
+  flex:1;overflow-y:auto;display:flex;justify-content:center;
+  padding:24px 20px;background:var(--bg);
+}
+.paper{
+  width:100%;max-width:820px;min-height:800px;background:var(--paper);
+  border-radius:4px;box-shadow:2px 3px 20px rgba(0,0,0,.08);
+  padding:40px 50px 60px 70px;position:relative;
+  border-left:3px solid #E8B4B8;
+}
+.paper::before{
+  content:'';position:absolute;left:58px;top:0;bottom:0;width:1px;
+  background:#E8B4B8;opacity:.5;
+}
+.paper-lines{
+  width:100%;min-height:700px;
+  font-family:'Caveat',cursive;font-size:26px;line-height:40px;
+  color:var(--ink);border:none;outline:none;resize:none;
+  background:repeating-linear-gradient(
+    transparent,transparent 39px,var(--line) 39px,var(--line) 40px
+  );
+  background-attachment:local;
+  padding:0;overflow:hidden;
+}
+.paper-lines::placeholder{color:#B0A89D;font-style:italic}
+
+/* anti mi-piace banner */
+.anti-mipiace{
+  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,#FFF3CD,#FCE4BB);
+  border:1px solid #E0C97F;border-radius:8px;padding:10px 18px;
+  font-size:12px;color:#7D5A00;max-width:380px;text-align:center;
+  line-height:1.4;display:flex;align-items:center;gap:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+.anti-mipiace svg{min-width:20px}
+
+/* ── RIGHT: SALA STUDIO ── */
+.sala-panel{
+  width:280px;min-width:280px;background:var(--sidebar-bg);
+  border-left:1px solid #E0D5C1;display:flex;flex-direction:column;
+  padding:16px 14px;gap:16px;overflow-y:auto;
+}
+.sala-panel::-webkit-scrollbar{width:4px}
+.sala-panel::-webkit-scrollbar-thumb{background:#D0C4B0;border-radius:4px}
+.sala-title{
+  font-size:13px;font-weight:700;color:var(--scaffold);
+  text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:6px;
+}
+.sala-title svg{width:16px;height:16px}
+
+/* pomodoro */
+.pomodoro{text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.pomo-display{font-size:36px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)}
+.pomo-label{font-size:11px;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.pomo-controls{display:flex;gap:6px}
+.pomo-btn{
+  width:36px;height:36px;border-radius:50%;border:1px solid #E0D5C1;
+  background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:.2s;
+}
+.pomo-btn:hover{background:var(--accent-pale);border-color:var(--accent)}
+.pomo-btn svg{width:16px;height:16px;color:var(--accent)}
+
+/* ambient sounds */
+.ambient-section{display:flex;flex-direction:column;gap:6px}
+.ambient-btn{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;
+  background:#fff;border:1px solid #E0D5C1;border-radius:6px;
+  cursor:pointer;font-family:inherit;font-size:12px;color:var(--scaffold);
+  transition:.2s;font-weight:500;
+}
+.ambient-btn:hover{background:var(--accent-pale);border-color:var(--accent)}
+.ambient-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ambient-btn svg{width:16px;height:16px}
+
+/* motivation */
+.motivation-box{
+  background:#fff;border:1px solid #E0D5C1;border-radius:var(--radius);
+  padding:12px;font-size:12px;line-height:1.5;color:var(--dim);
+  font-style:italic;text-align:center;
+}
+.motivation-box strong{color:var(--accent);font-style:normal}
+
+/* progress */
+.progress-section{display:flex;flex-direction:column;gap:6px}
+.progress-label{font-size:11px;font-weight:600;color:var(--dim)}
+.progress-bar-outer{height:8px;background:#E0D5C1;border-radius:4px;overflow:hidden}
+.progress-bar-inner{height:100%;background:var(--accent);border-radius:4px;transition:width .5s ease;width:0%}
+.progress-milestones{display:flex;justify-content:space-between;font-size:10px;color:var(--dim)}
+
+/* fullscreen btn */
+.btn-fullscreen{
+  margin-top:auto;background:none;border:1px solid #E0D5C1;
+  padding:8px;border-radius:6px;cursor:pointer;font-family:inherit;
+  font-size:12px;color:var(--dim);display:flex;align-items:center;gap:6px;
+  justify-content:center;transition:.2s;
+}
+.btn-fullscreen:hover{border-color:var(--accent);color:var(--accent)}
+.btn-fullscreen svg{width:14px;height:14px}
+
+/* STATES */
+.hidden{display:none!important}
+.topic-bar.compact{padding:8px 24px}
+.topic-bar.compact .topic-instruction{display:none}
+.topic-bar.compact .btn-new-topics{display:none}
+.topic-bar.compact .topic-card.selected{padding:8px 14px;font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <h1>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    ArgoMentor
+  </h1>
+  <div class="topbar-right">
+    <span class="word-counter" id="wordCounter">0 parole</span>
+    <button class="btn-reset" id="btnReset" title="Ricomincia da capo">Nuovo testo</button>
+  </div>
+</div>
+
+<!-- TOPIC BAR -->
+<div class="topic-bar" id="topicBar">
+  <div class="topic-instruction">Scegli la traccia su cui vuoi argomentare — leggi bene, poi decidi.</div>
+  <div class="topic-cards" id="topicCards"></div>
+  <button class="btn-new-topics" id="btnNewTopics">
+    <svg style="width:12px;height:12px;vertical-align:middle;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 105.64-12.36L1 10"/></svg>
+    Altre tracce
+  </button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- LEFT: SCAFFOLDING -->
+  <div class="scaffold-panel">
+    <div class="scaffold-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+      Scaffolding
+    </div>
+    <div id="scaffoldContent"></div>
+  </div>
+
+  <!-- CENTER: PAPER -->
+  <div class="paper-area">
+    <div class="paper">
+      <textarea class="paper-lines" id="paperText" placeholder="Scegli una traccia e inizia a scrivere la tua argomentazione qui..." disabled></textarea>
+      <div class="anti-mipiace">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7D5A00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="min-width:20px;width:20px;height:20px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>Qui non vale «mi piace e basta»! Devi spiegare <strong>perché</strong> la pensi così, con ragioni vere.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: SALA STUDIO -->
+  <div class="sala-panel">
+    <div class="sala-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+      Sala Studio
+    </div>
+
+    <!-- Pomodoro -->
+    <div class="pomodoro">
+      <div class="pomo-label">Concentrazione</div>
+      <div class="pomo-display" id="pomoDisplay">20:00</div>
+      <div class="pomo-controls">
+        <button class="pomo-btn" id="pomoStart" title="Avvia">
+          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+        <button class="pomo-btn" id="pomoPause" title="Pausa">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        </button>
+        <button class="pomo-btn" id="pomoReset" title="Reset">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 105.64-12.36L1 10"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sounds -->
+    <div class="ambient-section">
+      <div style="font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px">Suoni ambiente</div>
+      <button class="ambient-btn" data-sound="rain" id="sndRain">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 13V5a4 4 0 00-8 0v8"/><path d="M8 21l2-4"/><path d="M12 21l2-4"/><path d="M16 21l2-4"/><path d="M20 16.58A5 5 0 0018 7h-1.26A8 8 0 104 15.25"/></svg>
+        Pioggia
+      </button>
+      <button class="ambient-btn" data-sound="fire" id="sndFire">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.07-2.14 0-5.5 3-7.5.5 2 1.5 3 2.5 4.5 1.5 2 2.5 4 1 7a4.5 4.5 0 01-8 1"/></svg>
+        Camino
+      </button>
+      <button class="ambient-btn" data-sound="nature" id="sndNature">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 8c.7 0 1.4.2 2 .5"/><path d="M11 2a10 10 0 0110 10c0 .7-.1 1.3-.2 2"/><path d="M2 12h1"/><path d="M12 2v1"/><circle cx="12" cy="12" r="3"/><path d="M4.22 4.22l.7.7"/><path d="M18.36 5.64l.7-.7"/></svg>
+        Natura
+      </button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-section">
+      <div class="progress-label">Avanzamento testo</div>
+      <div class="progress-bar-outer"><div class="progress-bar-inner" id="progressBar"></div></div>
+      <div class="progress-milestones"><span>0</span><span>50</span><span>100</span><span>150</span><span>200+</span></div>
+    </div>
+
+    <!-- Motivation -->
+    <div class="motivation-box" id="motivationBox">
+      <strong>Ricorda:</strong> chi sa argomentare sa pensare. Non importa se gli altri la pensano diversamente: importa che tu sappia dire <strong>perché</strong>.
+    </div>
+
+    <button class="btn-fullscreen" id="btnFullscreen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      Schermo pieno
+    </button>
+  </div>
+</div>
+
+<script>
+// ── TRACCE (30) ──
+const TRACCE = [
+  "I compiti a casa sono davvero utili per imparare, oppure si potrebbe studiare meglio solo a scuola? Sostieni la tua posizione con almeno due ragioni concrete.",
+  "Meglio fare sport di squadra (calcio, basket, pallavolo) o sport individuali (nuoto, atletica, tennis)? Argomenta quale tipo forma di più il carattere e perché.",
+  "Le carte Pokémon (e simili) dovrebbero essere permesse a scuola durante l'intervallo, oppure creano solo problemi? Difendi la tua idea.",
+  "Un bambino di 10 anni dovrebbe avere uno smartphone tutto suo? Presenta le ragioni a favore o contro con esempi reali.",
+  "È più importante saper leggere tanti libri o saper usare bene il computer? Scegli una posizione e spiegala.",
+  "Gli animali dovrebbero vivere negli zoo per essere protetti, oppure gli zoo non sono giusti? Argomenta con fatti, non con emozioni.",
+  "Secondo te è più giusto che tutti i bambini abbiano la stessa paghetta oppure che la paghetta dipenda dai compiti fatti in casa? Motiva la risposta.",
+  "Le interrogazioni orali sono più giuste dei test scritti, o viceversa? Spiega perché un metodo è migliore dell'altro.",
+  "I videogiochi fanno male o possono anche insegnare qualcosa di utile? Prendi una posizione chiara e sostienila.",
+  "Sarebbe giusto che i bambini potessero votare per il sindaco della propria città? Argomenta il tuo sì o il tuo no.",
+  "La ricreazione dovrebbe durare di più? Trova ragioni serie (non solo «perché è bello giocare») per sostenere il tuo punto di vista.",
+  "È meglio andare in vacanza al mare o in montagna? Non vale dire «mi piace di più»: devi trovare ragioni oggettive.",
+  "I robot e l'intelligenza artificiale ci aiuteranno a vivere meglio o ci ruberanno il lavoro? Esprimi il tuo parere ragionato.",
+  "A scuola si dovrebbe imparare anche a cucinare? Argomenta perché sì o perché questa materia non servirebbe.",
+  "I libri di carta sono meglio degli e-book oppure ormai è il momento di passare al digitale? Difendi la tua tesi.",
+  "Le regole a scuola sono troppe o servono tutte? Scegli almeno una regola da difendere e una da criticare, spiegando perché.",
+  "È giusto che i capitani delle squadre scelgano i compagni durante l'ora di ginnastica? Proponi la tua opinione con argomenti solidi.",
+  "Un bambino dovrebbe poter scegliere da solo cosa mangiare alla mensa, anche se sceglie solo patatine? Argomenta.",
+  "I social network (YouTube, TikTok) sono strumenti utili o pericolosi per chi ha la nostra età? Prendi posizione e difendila.",
+  "È giusto dare un voto al comportamento? Spiega perché secondo te funziona o non funziona come sistema.",
+  "Imparare una seconda lingua straniera a scuola è davvero necessario, oppure basta l'inglese? Presenta le tue ragioni.",
+  "I compagni più bravi dovrebbero aiutare quelli in difficoltà durante le lezioni oppure ognuno deve cavarsela da solo?",
+  "Le divise scolastiche (il grembiule) sono una buona idea oppure tolgono libertà? Argomenta con ragioni precise.",
+  "Un allenatore di una squadra giovanile dovrebbe far giocare tutti, anche i meno bravi, oppure puntare a vincere? Motiva.",
+  "La maestra/il maestro dovrebbe assegnare i posti in classe oppure ognuno dovrebbe sedersi dove vuole? Sostieni la tua tesi.",
+  "I fumetti e i manga hanno lo stesso valore dei romanzi oppure sono «meno importanti»? Difendi la tua posizione con argomenti.",
+  "È più utile una gita scolastica al museo o una giornata di laboratorio all'aperto? Argomenta la tua scelta.",
+  "Se potessi cambiare una sola cosa della scuola di oggi, quale sarebbe? Spiega perché proprio quella e quali effetti avrebbe.",
+  "Le punizioni a scuola funzionano oppure sarebbe meglio usare un altro sistema per gestire chi sbaglia? Sostieni il tuo ragionamento.",
+  "Copiare dai compagni è solo «furbo» oppure è scorretto? Argomenta con ragioni che vadano oltre il semplice «è sbagliato»."
+];
+
+// ── SCAFFOLD DATA ──
+const SCAFFOLD = [
+  { label:"Introdurre la tua opinione", chips:["Secondo me…","Io credo che…","Sono convinto/a che…","La mia posizione è…","A mio parere…"] },
+  { label:"Aggiungere un argomento", chips:["Innanzitutto…","In primo luogo…","Un primo motivo è…","Prima di tutto…","Una ragione importante è…"] },
+  { label:"Aggiungere altri motivi", chips:["Inoltre…","In secondo luogo…","Un altro motivo è…","A questo si aggiunge che…","Non solo, ma anche…"] },
+  { label:"Dare un esempio", chips:["Per esempio…","Basti pensare che…","Un caso concreto è…","Come succede quando…","Lo dimostra il fatto che…"] },
+  { label:"Rispondere a chi non è d'accordo", chips:["Qualcuno potrebbe obiettare che…","C'è chi pensa che… però…","È vero che… tuttavia…","Anche se… bisogna considerare che…"] },
+  { label:"Causa ed effetto", chips:["Perché…","Di conseguenza…","Questo comporta…","Per questa ragione…","L'effetto è che…"] },
+  { label:"Confrontare", chips:["A differenza di…","Rispetto a…","Se paragoniamo…","Mentre… invece…","Da una parte… dall'altra…"] },
+  { label:"Concludere", chips:["In conclusione…","Per tutti questi motivi…","Riassumendo…","Ecco perché ritengo che…","In definitiva…"] }
+];
+
+// ── STATE ──
+let usedTopicIndices = [];
+let selectedTopic = null;
+let pomoInterval = null;
+let pomoSeconds = 20 * 60;
+let pomoRunning = false;
+let audioCtx = null;
+let activeOsc = {};
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  renderScaffold();
+  showNewTopics();
+  setupEvents();
+});
+
+// ── SCAFFOLD RENDER ──
+function renderScaffold(){
+  const container = document.getElementById('scaffoldContent');
+  container.innerHTML = SCAFFOLD.map(group => `
+    <div class="scaffold-group">
+      <div class="scaffold-group-label">${group.label}</div>
+      ${group.chips.map(c => `<div class="scaffold-chip" data-text="${c}">${c}</div>`).join('')}
+    </div>
+  `).join('');
+  container.querySelectorAll('.scaffold-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const ta = document.getElementById('paperText');
+      if(ta.disabled) return;
+      const text = chip.dataset.text + ' ';
+      const start = ta.selectionStart;
+      const before = ta.value.substring(0, start);
+      const after = ta.value.substring(ta.selectionEnd);
+      const needsNewline = before.length > 0 && !before.endsWith('\n') && !before.endsWith(' ');
+      ta.value = before + (needsNewline ? '\n' : '') + text + after;
+      const newPos = start + (needsNewline ? 1 : 0) + text.length;
+      ta.setSelectionRange(newPos, newPos);
+      ta.focus();
+      updateWordCount();
+    });
+  });
+}
+
+// ── TOPICS ──
+function getRandomTopics(count){
+  const available = [];
+  for(let i = 0; i < TRACCE.length; i++){
+    if(!usedTopicIndices.includes(i)) available.push(i);
+  }
+  if(available.length < count){
+    usedTopicIndices = [];
+    return getRandomTopics(count);
+  }
+  const shuffled = available.sort(() => Math.random() - 0.5);
+  const picked = shuffled.slice(0, count);
+  usedTopicIndices.push(...picked);
+  return picked;
+}
+
+function showNewTopics(){
+  if(selectedTopic !== null) return;
+  const bar = document.getElementById('topicBar');
+  bar.classList.remove('locked','compact');
+  const cards = document.getElementById('topicCards');
+  const indices = getRandomTopics(3);
+  cards.innerHTML = indices.map((idx, i) => `
+    <div class="topic-card" data-idx="${idx}">
+      <div class="topic-label">Traccia ${String.fromCharCode(65 + i)}</div>
+      ${TRACCE[idx]}
+    </div>
+  `).join('');
+  cards.querySelectorAll('.topic-card').forEach(card => {
+    card.addEventListener('click', () => selectTopic(card));
+  });
+  document.getElementById('btnNewTopics').classList.remove('hidden');
+}
+
+function selectTopic(card){
+  if(selectedTopic !== null) return;
+  selectedTopic = parseInt(card.dataset.idx);
+  const bar = document.getElementById('topicBar');
+  const cards = document.getElementById('topicCards');
+  // dismiss others
+  cards.querySelectorAll('.topic-card').forEach(c => {
+    if(c !== card) c.classList.add('dismissed');
+  });
+  card.classList.add('selected');
+  setTimeout(() => {
+    bar.classList.add('locked','compact');
+    cards.querySelectorAll('.dismissed').forEach(c => c.remove());
+  }, 400);
+  document.getElementById('btnNewTopics').classList.add('hidden');
+  // enable textarea
+  const ta = document.getElementById('paperText');
+  ta.disabled = false;
+  ta.placeholder = 'Scrivi qui la tua argomentazione…';
+  ta.focus();
+}
+
+// ── EVENTS ──
+function setupEvents(){
+  document.getElementById('btnNewTopics').addEventListener('click', showNewTopics);
+  document.getElementById('paperText').addEventListener('input', updateWordCount);
+  document.getElementById('btnReset').addEventListener('click', resetAll);
+  // Pomodoro
+  document.getElementById('pomoStart').addEventListener('click', startPomo);
+  document.getElementById('pomoPause').addEventListener('click', pausePomo);
+  document.getElementById('pomoReset').addEventListener('click', resetPomo);
+  // Fullscreen
+  document.getElementById('btnFullscreen').addEventListener('click', () => {
+    if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen();
+  });
+  // Ambient sounds
+  document.querySelectorAll('.ambient-btn').forEach(btn => {
+    btn.addEventListener('click', () => toggleSound(btn));
+  });
+}
+
+function updateWordCount(){
+  const text = document.getElementById('paperText').value.trim();
+  const words = text ? text.split(/\s+/).length : 0;
+  document.getElementById('wordCounter').textContent = words + ' parol' + (words === 1 ? 'a' : 'e');
+  // progress
+  const pct = Math.min(100, (words / 200) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+}
+
+function resetAll(){
+  if(document.getElementById('paperText').value.trim().length > 20){
+    if(!confirm('Vuoi davvero ricominciare? Il testo verrà cancellato.')) return;
+  }
+  selectedTopic = null;
+  document.getElementById('paperText').value = '';
+  document.getElementById('paperText').disabled = true;
+  document.getElementById('paperText').placeholder = 'Scegli una traccia e inizia a scrivere la tua argomentazione qui...';
+  updateWordCount();
+  showNewTopics();
+}
+
+// ── POMODORO ──
+function formatTime(s){
+  const m = Math.floor(s/60);
+  const sec = s%60;
+  return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+}
+function startPomo(){
+  if(pomoRunning) return;
+  pomoRunning = true;
+  pomoInterval = setInterval(() => {
+    pomoSeconds--;
+    if(pomoSeconds <= 0){ pausePomo(); pomoSeconds = 0; }
+    document.getElementById('pomoDisplay').textContent = formatTime(pomoSeconds);
+  }, 1000);
+}
+function pausePomo(){
+  pomoRunning = false;
+  clearInterval(pomoInterval);
+}
+function resetPomo(){
+  pausePomo();
+  pomoSeconds = 20 * 60;
+  document.getElementById('pomoDisplay').textContent = formatTime(pomoSeconds);
+}
+
+// ── AMBIENT SOUNDS (Web Audio API) ──
+function getAudioCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function createNoise(type){
+  const ctx = getAudioCtx();
+  const bufferSize = ctx.sampleRate * 2;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+
+  if(type === 'rain'){
+    for(let i = 0; i < bufferSize; i++){
+      data[i] = (Math.random() * 2 - 1) * 0.15;
+      if(Math.random() < 0.001) data[i] *= 4;
+    }
+  } else if(type === 'fire'){
+    for(let i = 0; i < bufferSize; i++){
+      data[i] = (Math.random() * 2 - 1) * 0.08;
+      if(i > 0) data[i] = data[i] * 0.3 + data[i-1] * 0.7;
+    }
+  } else {
+    for(let i = 0; i < bufferSize; i++){
+      data[i] = (Math.random() * 2 - 1) * 0.06;
+      if(i > 0) data[i] = data[i] * 0.15 + data[i-1] * 0.85;
+    }
+  }
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  const filter = ctx.createBiquadFilter();
+  filter.type = type === 'rain' ? 'highpass' : 'lowpass';
+  filter.frequency.value = type === 'rain' ? 800 : type === 'fire' ? 400 : 300;
+  const gain = ctx.createGain();
+  gain.gain.value = type === 'rain' ? 0.5 : type === 'fire' ? 0.6 : 0.4;
+  source.connect(filter).connect(gain).connect(ctx.destination);
+  source.start();
+  return {source, gain};
+}
+
+function toggleSound(btn){
+  const type = btn.dataset.sound;
+  if(activeOsc[type]){
+    activeOsc[type].gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+    setTimeout(() => { try{activeOsc[type].source.stop()}catch(e){} }, 600);
+    delete activeOsc[type];
+    btn.classList.remove('active');
+  } else {
+    activeOsc[type] = createNoise(type);
+    btn.classList.add('active');
+  }
+}
+
+// ── MOTIVATIONAL ROTATION ──
+const QUOTES = [
+  "Chi sa argomentare sa pensare. Non importa se gli altri la pensano diversamente: importa che tu sappia dire <strong>perché</strong>.",
+  "Un'opinione senza ragioni è come una casa senza fondamenta: prima o poi crolla.",
+  "Non devi avere ragione per forza. Devi saper <strong>spiegare</strong> il tuo ragionamento.",
+  "Argomentare è un superpotere: chi lo possiede convince, chi non lo possiede subisce.",
+  "Pensa a qualcuno che non è d'accordo con te. Cosa gli diresti per fargli cambiare idea?",
+  "Scrivi come se dovessi convincere il tuo compagno più testardo della classe.",
+  "Ogni frase che aggiungi rende la tua idea più forte. Continua così!",
+];
+let quoteIdx = 0;
+setInterval(() => {
+  quoteIdx = (quoteIdx + 1) % QUOTES.length;
+  document.getElementById('motivationBox').innerHTML = QUOTES[quoteIdx];
+}, 25000);
+</script>
+</body>
+</html>
