@@ -111,11 +111,20 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .scaffold-group-label{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px}
 .scaffold-chip{
   font-size:14px;padding:8px 12px;background:#fff;
-  border:1px solid #E0D5C1;border-radius:6px;cursor:pointer;
-  transition:.2s;color:var(--scaffold);line-height:1.3;
+  border:1px solid #E0D5C1;border-radius:6px;
+  color:var(--scaffold);line-height:1.3;position:relative;
+  transition:.3s;
 }
-.scaffold-chip:hover{background:var(--accent-pale);border-color:var(--accent-light);transform:translateX(3px)}
-.scaffold-chip:active{transform:scale(.97)}
+.scaffold-chip.used{
+  background:var(--accent-pale);border-color:var(--accent-light);color:var(--accent);
+}
+.scaffold-chip.used::after{
+  content:'';position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  width:16px;height:16px;border-radius:50%;background:var(--accent);
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  background-size:12px;background-position:center;background-repeat:no-repeat;
+}
+.scaffold-chip:hover{background:var(--accent-pale);border-color:var(--accent-light)}
 
 /* ── CENTER: PAPER ── */
 .paper-area{
@@ -248,7 +257,8 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   margin-bottom:6px;
 }
 .intro-subtitle{font-size:16px;color:var(--dim);font-weight:500}
-.intro-sections{display:flex;flex-direction:column;gap:20px;margin-bottom:36px}
+.intro-sections{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:36px}
+.intro-card-example{grid-column:1/-1}
 .intro-card{
   display:flex;gap:16px;background:#fff;border:1px solid #E0D5C1;
   border-radius:12px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,.04);
@@ -520,21 +530,9 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
           <div class="sensor-dot" id="dotTyping"></div>
         </div>
 
-        <div class="sensor-row" data-sensor="speed">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span class="sensor-name">Troppo veloce</span>
-          <div class="sensor-dot" id="dotSpeed"></div>
-        </div>
-        <div class="sensor-row" data-sensor="unread">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
-          <span class="sensor-name">Scelte non lette</span>
-          <div class="sensor-dot" id="dotUnread"></div>
-        </div>
-        <div class="sensor-row" data-sensor="skipped">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/><path d="M19 19l-7-7-7 7"/></svg>
-          <span class="sensor-name">Contenuto saltato</span>
-          <div class="sensor-dot" id="dotSkipped"></div>
-        </div>
+
+
+
         <div class="sensor-row" data-sensor="paste">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/></svg>
           <span class="sensor-name">Copia/Incolla</span>
@@ -646,21 +644,18 @@ function renderScaffold(){
       ${group.chips.map(c => `<div class="scaffold-chip" data-text="${c}">${c}</div>`).join('')}
     </div>
   `).join('');
-  container.querySelectorAll('.scaffold-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const ta = document.getElementById('paperText');
-      if(ta.disabled) return;
-      const text = chip.dataset.text + ' ';
-      const start = ta.selectionStart;
-      const before = ta.value.substring(0, start);
-      const after = ta.value.substring(ta.selectionEnd);
-      const needsNewline = before.length > 0 && !before.endsWith('\n') && !before.endsWith(' ');
-      ta.value = before + (needsNewline ? '\n' : '') + text + after;
-      const newPos = start + (needsNewline ? 1 : 0) + text.length;
-      ta.setSelectionRange(newPos, newPos);
-      ta.focus();
-      updateWordCount();
-    });
+}
+
+function checkScaffoldUsage(){
+  const text = document.getElementById('paperText').value.toLowerCase();
+  document.querySelectorAll('.scaffold-chip').forEach(chip => {
+    // match the keyword part before the ellipsis (e.g. "Secondo me" from "Secondo me…")
+    const phrase = chip.dataset.text.replace(/[…\.\s]+$/,'').toLowerCase();
+    if(phrase.length > 2 && text.includes(phrase)){
+      chip.classList.add('used');
+    } else {
+      chip.classList.remove('used');
+    }
   });
 }
 
@@ -736,6 +731,7 @@ function updateWordCount(){
   const text = document.getElementById('paperText').value.trim();
   const words = text ? text.split(/\s+/).length : 0;
   document.getElementById('wordCounter').textContent = words + ' parol' + (words === 1 ? 'a' : 'e');
+  checkScaffoldUsage();
 }
 
 function resetAll(){
@@ -809,34 +805,40 @@ function setupSalaStudio(){
     }
   });
 
-  // 4. Testo insensato (analisi vocali/consonanti italiano)
+  // 4. Testo insensato (analisi italiano: consonanti consecutive, rapporto vocali, lunghezza)
   let nonsenseTimer = null;
   document.getElementById('paperText').addEventListener('input', () => {
     clearTimeout(nonsenseTimer);
     nonsenseTimer = setTimeout(() => {
       const text = document.getElementById('paperText').value;
       const words = text.trim().split(/\s+/).filter(w => w.length > 0);
-      if(words.length < 8) return;
-      const last10 = words.slice(-10);
+      if(words.length < 2) return;
+      const check = words.slice(-8);
       const vowels = 'aeiouàèéìòù';
-      let nonsenseCount = 0;
-      last10.forEach(w => {
+      let flagged = 0;
+      check.forEach(w => {
         const lower = w.toLowerCase().replace(/[^a-zàèéìòù]/g,'');
-        if(lower.length < 2) return;
-        const vCount = [...lower].filter(c => vowels.includes(c)).length;
-        const ratio = vCount / lower.length;
-        if(ratio < 0.15 || ratio > 0.85) nonsenseCount++;
-        if(lower.length > 2){
-          const trigrams = [];
-          for(let i = 0; i < lower.length - 2; i++) trigrams.push(lower.slice(i, i+3));
-          const allConsonant = trigrams.filter(t => ![...t].some(c => vowels.includes(c)));
-          if(allConsonant.length > lower.length * 0.4) nonsenseCount++;
+        if(lower.length < 3) return;
+        // 1) 3+ consonanti consecutive → sospetto (rarissimo in italiano)
+        let maxConsec = 0, consec = 0;
+        for(const c of lower){
+          if(!vowels.includes(c)){ consec++; maxConsec = Math.max(maxConsec, consec); }
+          else consec = 0;
         }
+        if(maxConsec >= 3) flagged++;
+        // 2) rapporto vocali troppo basso (<25%) per parole lunghe
+        else if(lower.length >= 5){
+          const vRatio = [...lower].filter(c => vowels.includes(c)).length / lower.length;
+          if(vRatio < 0.25) flagged++;
+        }
+        // 3) parola lunghissima senza spazi (>16 chars)
+        if(lower.length > 16) flagged++;
       });
-      if(nonsenseCount >= 4){
+      // trigger se >40% delle parole analizzate sono sospette
+      if(flagged >= Math.max(1, Math.ceil(check.length * 0.4))){
         triggerAlert('nonsense', 'Testo insensato rilevato');
       }
-    }, 2000);
+    }, 1500);
   });
 
   // 5. Mic / Noise — auto-start
@@ -874,11 +876,6 @@ function readNoise(){
   if(SS.noiseHistory.length > 50) SS.noiseHistory.shift();
   SS.noiseAvg = Math.round(SS.noiseHistory.reduce((a,b)=>a+b,0) / SS.noiseHistory.length);
   document.getElementById('noiseAvg').textContent = SS.noiseAvg + '%';
-  // threshold alert (avg * 1.2 from Bottega spec)
-  if(pct > SS.noiseAvg * 1.2 && SS.noiseAvg > 15){
-    // only alert occasionally
-    if(Math.random() < 0.02) triggerAlert('skipped', 'Livello rumore elevato');
-  }
   requestAnimationFrame(readNoise);
 }
 
@@ -973,8 +970,6 @@ function savePdf(){
 
   const sNames = {
     click:'Click compulsivo', typing:'Digitazione compulsiva',
-    speed:'Troppo veloce',
-    unread:'Scelte non lette', skipped:'Contenuto saltato',
     paste:'Copia/Incolla', nonsense:'Testo insensato'
   };
   const tot = Object.values(SS.alerts).reduce((a,b) => a+b, 0);
