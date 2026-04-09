@@ -153,17 +153,6 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 }
 .paper-lines::placeholder{color:#B0A89D;font-style:italic}
 
-/* anti mi-piace banner */
-.anti-mipiace{
-  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
-  background:linear-gradient(135deg,#FFF3CD,#FCE4BB);
-  border:1px solid #E0C97F;border-radius:8px;padding:10px 18px;
-  font-size:12px;color:#7D5A00;max-width:380px;text-align:center;
-  line-height:1.4;display:flex;align-items:center;gap:8px;
-  box-shadow:0 2px 8px rgba(0,0,0,.06);
-}
-.anti-mipiace svg{min-width:20px}
-
 /* ── RIGHT: SALASTUDIO ── */
 .sala-panel{
   width:280px;min-width:280px;background:var(--sidebar-bg);
@@ -182,19 +171,15 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   font-size:11px;font-weight:700;color:var(--accent);
   text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;
 }
-/* noise meter */
+/* noise histogram */
 .noise-meter{
-  height:80px;background:#F5F0E8;border-radius:8px;position:relative;
+  height:70px;background:#F5F0E8;border-radius:8px;position:relative;
   overflow:hidden;margin-bottom:6px;
 }
-.noise-bar{
-  position:absolute;bottom:0;left:0;right:0;height:0%;
-  background:linear-gradient(to top,var(--accent-light),var(--accent));
-  transition:height .3s;border-radius:0 0 8px 8px;
-}
+.noise-meter canvas{width:100%;height:100%;display:block}
 .noise-threshold{
   position:absolute;bottom:60%;left:0;right:0;
-  border-top:2px dashed var(--accent);opacity:.5;
+  border-top:2px dashed var(--accent);opacity:.4;pointer-events:none;
 }
 .noise-stats{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
 .noise-pct{font-size:28px;font-weight:700;color:var(--ink)}
@@ -212,6 +197,31 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 }
 .mic-btn:hover{border-color:var(--accent)}
 .mic-btn svg{width:16px;height:16px}
+
+/* noise penalty */
+.paper-lines.fading{
+  animation:textFade 1s ease-in-out infinite alternate;
+}
+@keyframes textFade{0%{opacity:1}100%{opacity:.3}}
+.paper-lines.penalty-flash{animation:penaltyFlash .4s ease}
+@keyframes penaltyFlash{0%{background-color:rgba(196,69,54,.08)}100%{background-color:transparent}}
+
+/* noise info button */
+.noise-info-row{display:flex;align-items:center;justify-content:space-between}
+.noise-info-btn{
+  height:22px;border-radius:6px;border:1px solid #E0D5C1;padding:0 8px;
+  background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  gap:4px;font-size:10px;font-weight:600;color:var(--accent);font-family:inherit;
+  transition:.2s;flex-shrink:0;text-transform:uppercase;letter-spacing:.3px;
+}
+.noise-info-btn:hover{background:var(--accent-pale);border-color:var(--accent)}
+.noise-tooltip{
+  display:none;background:#fff;border:1px solid #E0D5C1;border-radius:8px;
+  padding:10px 12px;font-size:11px;line-height:1.55;color:#3A3A4A;
+  margin-top:6px;box-shadow:0 4px 16px rgba(0,0,0,.08);
+}
+.noise-tooltip.visible{display:block}
+.noise-tooltip strong{color:var(--accent)}
 
 /* behavior sensors */
 .sensor-list{display:flex;flex-direction:column;gap:2px}
@@ -487,10 +497,6 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <div class="paper-area">
     <div class="paper">
       <textarea class="paper-lines" id="paperText" placeholder="Scegli una traccia e inizia a scrivere la tua argomentazione qui..." disabled></textarea>
-      <div class="anti-mipiace">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#7D5A00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="min-width:20px;width:20px;height:20px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span>Qui non vale «mi piace e basta»! Devi spiegare <strong>perché</strong> la pensi così, con ragioni vere.</span>
-      </div>
     </div>
   </div>
 
@@ -500,9 +506,25 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 
     <!-- Noise Level -->
     <div class="sala-section">
-      <div class="sala-section-label">Livello Rumore</div>
+      <div class="noise-info-row">
+        <div class="sala-section-label" style="margin-bottom:0">Livello Rumore</div>
+        <button class="noise-info-btn" id="noiseInfoBtn" title="Info SalaStudio">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:12px;height:12px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          info
+        </button>
+      </div>
+      <div class="noise-tooltip" id="noiseTooltip">
+        <strong>Perché c'è un microfono?</strong><br>
+        La SalaStudio funziona come una <strong>biblioteca</strong>: un luogo silenzioso dove ci si concentra per scrivere bene. Il microfono ascolta il livello di rumore della classe e lo mostra nell'istogramma.<br><br>
+        <strong>Cosa succede se c'è troppo rumore?</strong><br>
+        Se il rumore supera il <strong>50%</strong> per più di <strong>3 secondi</strong>, il testo che hai scritto inizia a sbiadirsi: è un avviso, come quando il bibliotecario ti guarda male.<br>
+        Se dopo <strong>10 secondi</strong> il rumore non scende, <strong>l'ultima frase viene cancellata</strong>: il rumore ha «rovinato» il tuo lavoro.<br><br>
+        <strong>Come si evita?</strong><br>
+        Semplice: silenzio. In biblioteca si parla sottovoce. Il tuo testo è al sicuro finché l'ambiente è tranquillo.<br><br>
+        <span style="font-size:10px;color:var(--dim)">Per il docente: il sistema allena l'autoregolazione del gruppo. Il report PDF registra la media rumore e le segnalazioni comportamentali rilevate durante la sessione.</span>
+      </div>
       <div class="noise-meter">
-        <div class="noise-bar" id="noiseBar"></div>
+        <canvas id="noiseCanvas"></canvas>
         <div class="noise-threshold"></div>
       </div>
       <div class="noise-stats">
@@ -619,6 +641,8 @@ const SS = {
   micStream: null,
   noiseHistory: [],
   noiseAvg: 0,
+  noiseOverStart: null, // timestamp when noise first exceeded 50%
+  noiseFading: false,
 };
 
 // ── INIT ──
@@ -805,44 +829,34 @@ function setupSalaStudio(){
     }
   });
 
-  // 4. Testo insensato (analisi italiano: consonanti consecutive, rapporto vocali, lunghezza)
+  // 4. Testo insensato: 1 sola parola con 3+ consonanti consecutive = alert
   let nonsenseTimer = null;
   document.getElementById('paperText').addEventListener('input', () => {
     clearTimeout(nonsenseTimer);
     nonsenseTimer = setTimeout(() => {
       const text = document.getElementById('paperText').value;
       const words = text.trim().split(/\s+/).filter(w => w.length > 0);
-      if(words.length < 2) return;
-      const check = words.slice(-8);
+      if(!words.length) return;
       const vowels = 'aeiouàèéìòù';
-      let flagged = 0;
-      check.forEach(w => {
+      for(const w of words.slice(-6)){
         const lower = w.toLowerCase().replace(/[^a-zàèéìòù]/g,'');
-        if(lower.length < 3) return;
-        // 1) 3+ consonanti consecutive → sospetto (rarissimo in italiano)
-        let maxConsec = 0, consec = 0;
+        if(lower.length < 3) continue;
+        let consec = 0;
         for(const c of lower){
-          if(!vowels.includes(c)){ consec++; maxConsec = Math.max(maxConsec, consec); }
-          else consec = 0;
+          if(!vowels.includes(c)) consec++; else consec = 0;
+          if(consec >= 3){ triggerAlert('nonsense', 'Testo insensato rilevato'); return; }
         }
-        if(maxConsec >= 3) flagged++;
-        // 2) rapporto vocali troppo basso (<25%) per parole lunghe
-        else if(lower.length >= 5){
-          const vRatio = [...lower].filter(c => vowels.includes(c)).length / lower.length;
-          if(vRatio < 0.25) flagged++;
-        }
-        // 3) parola lunghissima senza spazi (>16 chars)
-        if(lower.length > 16) flagged++;
-      });
-      // trigger se >40% delle parole analizzate sono sospette
-      if(flagged >= Math.max(1, Math.ceil(check.length * 0.4))){
-        triggerAlert('nonsense', 'Testo insensato rilevato');
       }
-    }, 1500);
+    }, 1200);
   });
 
   // 5. Mic / Noise — auto-start
   autoStartMic();
+
+  // 6. Noise info toggle
+  document.getElementById('noiseInfoBtn').addEventListener('click', () => {
+    document.getElementById('noiseTooltip').classList.toggle('visible');
+  });
 }
 
 async function autoStartMic(){
@@ -870,12 +884,71 @@ function readNoise(){
   SS.analyser.getByteFrequencyData(data);
   const avg = data.reduce((a,b) => a+b, 0) / data.length;
   const pct = Math.min(100, Math.round((avg / 128) * 100));
-  document.getElementById('noiseBar').style.height = pct + '%';
   document.getElementById('noisePct').textContent = pct + '%';
   SS.noiseHistory.push(pct);
-  if(SS.noiseHistory.length > 50) SS.noiseHistory.shift();
+  if(SS.noiseHistory.length > 40) SS.noiseHistory.shift();
   SS.noiseAvg = Math.round(SS.noiseHistory.reduce((a,b)=>a+b,0) / SS.noiseHistory.length);
   document.getElementById('noiseAvg').textContent = SS.noiseAvg + '%';
+
+  // ── Noise penalty system ──
+  const ta = document.getElementById('paperText');
+  const now = Date.now();
+  if(pct > 50){
+    if(!SS.noiseOverStart) SS.noiseOverStart = now;
+    const elapsed = now - SS.noiseOverStart;
+    if(elapsed >= 3000 && !SS.noiseFading){
+      SS.noiseFading = true;
+      ta.classList.add('fading');
+    }
+    if(elapsed >= 10000 && SS.noiseFading){
+      // Delete last sentence
+      const text = ta.value;
+      if(text.length > 0){
+        // Find last sentence boundary (. ! ? or newline)
+        const trimmed = text.replace(/[\s.!?]+$/, '');
+        const lastBound = Math.max(
+          trimmed.lastIndexOf('. '),
+          trimmed.lastIndexOf('! '),
+          trimmed.lastIndexOf('? '),
+          trimmed.lastIndexOf('\n')
+        );
+        ta.value = lastBound > 0 ? text.substring(0, lastBound + 1) : '';
+        ta.classList.add('penalty-flash');
+        setTimeout(() => ta.classList.remove('penalty-flash'), 500);
+        updateWordCount();
+      }
+      // Reset timer so it doesn't keep deleting every frame
+      SS.noiseOverStart = now;
+    }
+  } else {
+    SS.noiseOverStart = null;
+    if(SS.noiseFading){
+      SS.noiseFading = false;
+      ta.classList.remove('fading');
+    }
+  }
+
+  // ── Draw histogram ──
+  const canvas = document.getElementById('noiseCanvas');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * 2;
+  canvas.height = rect.height * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const bars = SS.noiseHistory;
+  const barW = Math.max(3, (canvas.width / 40));
+  const gap = 2;
+  const startX = canvas.width - bars.length * (barW + gap);
+  bars.forEach((v, i) => {
+    const h = (v / 100) * canvas.height;
+    const x = startX + i * (barW + gap);
+    if(v < 40) ctx.fillStyle = '#40916C';
+    else if(v < 70) ctx.fillStyle = '#E6A817';
+    else ctx.fillStyle = '#C44536';
+    ctx.beginPath();
+    ctx.roundRect(x, canvas.height - h, barW, h, [2, 2, 0, 0]);
+    ctx.fill();
+  });
   requestAnimationFrame(readNoise);
 }
 
